@@ -52,7 +52,7 @@ if [ ! -x "$DIVE_SCRIPT" ]; then
 	mkdir -p "$PLAYGROUND" || oops "failed to create $PLAYGROUND"
 
 	echo "installing tools..."
-	pkg install -y proot bzip2 tar wget || oops "failed to install required tools"
+	pkg in -y proot bzip2 tar wget || oops "failed to install required tools"
 
 	tmpDir="$PLAYGROUND/tmp"
 	mkdir -p "$tmpDir" || oops "false to create $tmpDir"
@@ -66,22 +66,57 @@ if [ ! -x "$DIVE_SCRIPT" ]; then
 	echo 'sandbox = false' > "$PLAYGROUND/etc/nix/nix.conf" || oops "failed to create $PLAYGROUND/etc/nix/nix.conf"
 
 	case "$(uname -s).$(uname -m)" in
-		Linux.x86_64) system=x86_64-linux; hash=e229e28f250cad684c278c9007b07a24eb4ead239280c237ed2245871eca79e0;;
-		Linux.i?86) system=i686-linux; hash=223c141b7ce322aacd4003dfc79b969ee813396d2ac586cf44c0e787233b1666;;
-		Linux.aarch64) system=aarch64-linux; hash=94d3d7d2b551b228ec38f83c6f037c5e5b6aaf0805450967f800c02a827b1f41;;
-		Darwin.x86_64) system=x86_64-darwin; hash=4182a38948c9ce520993f79a5caf8ce3d49636189f4f0f7e8decbc91ddb61cd1;;
-		*) oops "sorry, there is no binary distribution of Nix for your platform";;
+	    Linux.x86_64)
+	        hash=0ff23ac8437c5d15d08063a0b677c47639ab291988ec95eb603f29dc237eb00b
+	        path=i71d2zyp9c30v98mvqc4dvmnvb1sbx90/nix-2.23.3-x86_64-linux.tar.xz
+	        system=x86_64-linux
+	        ;;
+	    Linux.i?86)
+	        hash=b417445a9d0091507a38f5321c4711d9f2a862061347596f13ab9dcbafcaf15b
+	        path=z201kfh4cab9n36hpg3b708bk15aqi55/nix-2.23.3-i686-linux.tar.xz
+	        system=i686-linux
+	        ;;
+	    Linux.aarch64)
+	        hash=4d75ef8049ed2cef54dc6b6a40115010fc7773544c10904e198248ed9b6c4b4a
+	        path=gqlsjys012rw36hmljv5f2jav8y0c4kx/nix-2.23.3-aarch64-linux.tar.xz
+	        system=aarch64-linux
+	        ;;
+	    Linux.armv6l)
+	        hash=8e706706cb7c27a3aca33ec82afb3bc383eac633ad99857380008f7be2193849
+	        path=pv3rz6nqq5sd3r42h1fm58z0jpzy4rwc/nix-2.23.3-armv6l-linux.tar.xz
+	        system=armv6l-linux
+	        ;;
+	    Linux.armv7l)
+	        hash=c0988eb62334b7736f0ef60b767465f681c0f622b4635b4450436d127239b866
+	        path=1y8i52p9m7v2lqh3gpq1mjllzbnnghfm/nix-2.23.3-armv7l-linux.tar.xz
+	        system=armv7l-linux
+	        ;;
+	    Linux.riscv64)
+	        hash=ca8758fe631781d4b94af5c60f482d5a6d8279c0f20d85213233447ed6916773
+	        path=g8ywv3b9binpnhxkp5lv0v60v2kx5jdr/nix-2.23.3-riscv64-linux.tar.xz
+	        system=riscv64-linux
+	        ;;
+	    Darwin.x86_64)
+	        hash=2bfa2564bc7814336935155d093653ecd4392239df07df46093b0188a2d1acea
+	        path=chv9j1lfr92jsy5y12icd6arhsil0fd8/nix-2.23.3-x86_64-darwin.tar.xz
+	        system=x86_64-darwin
+	        ;;
+	    Darwin.arm64|Darwin.aarch64)
+	        hash=af5370b63fdc0c8009ad42446dfc46ad347855fc89256b86b5080ac04c89828f
+	        path=8jlzxrnl7zfk04r0q1hczr3fpylkwah5/nix-2.23.3-aarch64-darwin.tar.xz
+	        system=aarch64-darwin
+	        ;;
+	    *) oops "sorry, there is no binary distribution of Nix for your platform";;
 	esac
 
-	url="https://nixos.org/releases/nix/nix-2.2.1/nix-2.2.1-$system.tar.bz2"
+	url=https://releases.nixos.org/nix/nix-2.23.3/nix-2.23.3-$system.tar.xz
 
-	tarball="$tmpDir/$(basename "$tmpDir/nix-2.2.1-$system.tar.bz2")"
-	#tarball="$HOME/nix-2.2.1-$system.tar.bz2"
+	tarball=$tmpDir/nix-2.23.3-$system.tar.xz
 
-	echo "downloading Nix 2.2.1 binary tarball for $system from '$url' to '$tmpDir'..."
+	echo "downloading Nix 2.23.3 binary tarball for $system from '$url' to '$tmpDir'..."
 	$TERMUX_BIN/wget "$url" -O "$tarball" || oops "failed to download '$url'"
 
-        hash2="$(sha256sum -b "$tarball" | cut -c1-64)"
+	hash2="$(sha256sum -b "$tarball" | cut -c1-64)"
 
 	if [ "$hash" != "$hash2" ]; then
 		oops "SHA-256 hash mismatch in '$url'; expected $hash, got $hash2"
@@ -94,7 +129,7 @@ if [ ! -x "$DIVE_SCRIPT" ]; then
 		rm -rf "$unpack"
 	}
 	trap cleanup EXIT INT QUIT TERM
-	< "$tarball" bzcat | $TERMUX_BIN/tar -xf - -C "$unpack" || oops "failed to unpack $tarball"
+	< "$tarball" xzcat | $TERMUX_BIN/tar -xf - -C "$unpack" || oops "failed to unpack $tarball"
 
 	script=$(echo "$unpack"/*/install)
 
@@ -121,7 +156,7 @@ if [ ! -x "$DIVE_SCRIPT" ]; then
 		--link2symlink \
 		"$INTERMEDIATE_SCRIPT" || oops "failed to run Nix install script in proot"
 
-	echo "creating $DIVE_SCRIPT and finalizind the installation..."
+	echo "creating $DIVE_SCRIPT and finalizing the installation..."
 	{
 ########
 	cat > "$DIVE_SCRIPT" << --------EOF
